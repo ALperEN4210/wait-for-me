@@ -1,0 +1,17 @@
+#include <MHZ19.h>
+#include <SoftwareSerial.h>
+
+SoftwareSerial mySerial(10, 11);
+MHZ19 myMHZ19;
+
+void setup() {
+  Serial.begin(9600);
+  mySerial.begin(9600);
+  myMHZ19.begin(mySerial);
+}
+
+void loop() {
+  int co2 = myMHZ19.getCO2();
+  Serial.println(co2);
+  delay(2000);
+}
