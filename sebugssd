@@ -1,0 +1,34 @@
+#include <SoftwareSerial.h>
+
+SoftwareSerial co2Serial(2, 3); // RX=Pin2, TX=Pin3
+
+byte cmd[9] = {0xFF, 0x01, 0x86, 0x00, 0x00, 0x00, 0x00, 0x00, 0x79};
+byte response[9];
+
+void setup() {
+  Serial.begin(9600);
+  co2Serial.begin(9600);
+  delay(3000); // ısınma
+  Serial.println("Hazir!");
+}
+
+void loop() {
+  while (co2Serial.available()) co2Serial.read();
+  
+  co2Serial.write(cmd, 9);
+  delay(1000);
+
+  int available = co2Serial.available();
+  Serial.print("Gelen byte: ");
+  Serial.println(available);
+
+  if (available >= 9) {
+    co2Serial.readBytes(response, 9);
+    int co2  = (response[2] << 8) | response[3];
+    int temp = response[4] - 40;
+    Serial.print("CO2: "); Serial.print(co2); Serial.print(" ppm | Sicaklik: "); Serial.print(temp); Serial.println(" C");
+  } else {
+    Serial.println("Yanit yok! Sari/siyah kabloyu yer degistir.");
+  }
+  delay(3000);
+}
