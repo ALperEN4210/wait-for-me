@@ -1,0 +1,48 @@
+#include <SoftwareSerial.h>
+
+SoftwareSerial co2Serial(2, 3); // RX=Pin2, TX=Pin3
+
+byte cmd[9] = {0xFF, 0x01, 0x86, 0x00, 0x00, 0x00, 0x00, 0x00, 0x79};
+byte response[9];
+
+void setup() {
+  Serial.begin(9600);
+  co2Serial.begin(9600);
+  Serial.println("MH-Z19B UART Baslatildi");
+  Serial.println("Sensor isinuyor, 3 dakika bekleyin...");
+}
+
+void loop() {
+  // Komut gönder
+  co2Serial.write(cmd, 9);
+  delay(100);
+
+  // Yanıt bekle
+  memset(response, 0, 9);
+  if (co2Serial.available() >= 9) {
+    co2Serial.readBytes(response, 9);
+
+    // Başlık kontrolü
+    if (response[0] == 0xFF && response[1] == 0x86) {
+      
+      // Checksum doğrulama
+      byte checksum = 0;
+      for (int i = 1; i < 8; i++) checksum += response[i];
+      checksum = 0xFF - checksum + 1;
+
+      if (checksum == response[8]) {
+        int co2  = (response[2] << 8) | response[3];
+        int temp = response[4] - 40;
+
+        Serial.print("CO2: ");
+        Serial.print(co2);
+        Serial.print(" ppm  |  Sicaklik: ");
+        Serial.print(temp);
+        Serial.println(" C");
+      } else {
+        Serial.println("Checksum hatasi!");
+      }
+    }
+  }
+  delay(2000);
+}
