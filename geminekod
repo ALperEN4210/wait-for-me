@@ -1,0 +1,35 @@
+#include <SoftwareSerial.h>
+
+// RX = 10 (Sensörün TX'i buraya), TX = 11 (Sensörün RX'i buraya)
+SoftwareSerial co2Serial(10, 11); 
+
+// MH-Z19B okuma komutu (Standart 9 byte komut dizisi)
+byte readCommand[] = {0xFF, 0x01, 0x86, 0x00, 0x00, 0x00, 0x00, 0x00, 0x79}; 
+byte response[9]; 
+
+void setup() {
+  Serial.begin(9600);
+  co2Serial.begin(9600);
+  Serial.println("MH-Z19B Isiniyor... (Yaklasik 3 dk bekleyin)");
+}
+
+void loop() {
+  co2Serial.write(readCommand, 9);
+  memset(response, 0, 9);
+  co2Serial.readBytes(response, 9);
+
+  if (response[0] != 0xFF || response[1] != 0x86) {
+    Serial.println("Okuma hatasi veya sensor hazir degil.");
+  } else {
+    // CO2 hesaplama formülü: (High Byte * 256) + Low Byte
+    int co2High = (int)response[2];
+    int co2Low = (int)response[3];
+    int ppm = (co2High * 256) + co2Low;
+
+    Serial.print("CO2 Orani: ");
+    Serial.print(ppm);
+    Serial.println(" ppm");
+  }
+
+  delay(5000); // Her 5 saniyede bir ölçüm yap
+}
