@@ -1,0 +1,69 @@
+#include <SoftwareSerial.h>
+#include <LiquidCrystal.h>
+
+// MH-Z19B
+SoftwareSerial co2Serial(10, 11);
+
+// LCD
+LiquidCrystal lcd(7, 6, 5, 4, 3, 2);
+
+byte readCommand[] = {
+  0xFF, 0x01, 0x86,
+  0x00, 0x00, 0x00,
+  0x00, 0x00, 0x79
+};
+
+byte response[9];
+
+void setup() {
+
+  Serial.begin(9600);
+  co2Serial.begin(9600);
+
+  lcd.begin(16, 2);
+
+  lcd.setCursor(0, 0);
+  lcd.print("MH-Z19B Basladi");
+
+  delay(2000);
+
+  lcd.clear();
+}
+
+void loop() {
+
+  co2Serial.write(readCommand, 9);
+
+  memset(response, 0, 9);
+  co2Serial.readBytes(response, 9);
+
+  lcd.clear();
+
+  if (response[0] != 0xFF || response[1] != 0x86) {
+
+    Serial.println("Okuma hatasi");
+
+    lcd.setCursor(0, 0);
+    lcd.print("Okuma Hatasi");
+
+  } else {
+
+    int co2High = (int)response[2];
+    int co2Low = (int)response[3];
+
+    int ppm = (co2High * 256) + co2Low;
+
+    Serial.print("CO2: ");
+    Serial.print(ppm);
+    Serial.println(" ppm");
+
+    lcd.setCursor(0, 0);
+    lcd.print("CO2 Orani:");
+
+    lcd.setCursor(0, 1);
+    lcd.print(ppm);
+    lcd.print(" PPM");
+  }
+
+  delay(5000);
+}
