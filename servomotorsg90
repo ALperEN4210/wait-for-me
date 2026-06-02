@@ -1,0 +1,18 @@
+#include <Servo.h>
+
+Servo servoMotor;
+
+void setup() {
+  servoMotor.attach(9); // Servo D9 pininde
+}
+
+void loop() {
+  servoMotor.write(0);   // 0 derece
+  delay(1000);
+
+  servoMotor.write(90);  // 90 derece
+  delay(1000);
+
+  servoMotor.write(180); // 180 derece
+  delay(1000);
+}
