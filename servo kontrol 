@@ -1,0 +1,21 @@
+#include <Servo.h>
+
+Servo servo;
+
+void setup() {
+  servo.attach(9);
+}
+
+void loop() {
+  servo.write(0);    // Tam hız bir yön
+  delay(2000);
+
+  servo.write(90);   // Dur
+  delay(2000);
+
+  servo.write(180);  // Tam hız diğer yön
+  delay(2000);
+
+  servo.write(90);   // Dur
+  delay(2000);
+}
