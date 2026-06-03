@@ -1,0 +1,126 @@
+#include <SoftwareSerial.h>
+#include <LiquidCrystal.h>
+#include <Servo.h>
+
+// ==================== MH-Z19B ====================
+SoftwareSerial co2Serial(10, 11);
+
+// ==================== LCD ====================
+LiquidCrystal lcd(7, 6, 5, 4, 3, 2);
+
+// ==================== Servo ====================
+Servo servoMotor;
+
+// ==================== MH-Z19B Komutu ====================
+byte readCommand[] = {
+  0xFF, 0x01, 0x86,
+  0x00, 0x00, 0x00,
+  0x00, 0x00, 0x79
+};
+
+byte response[9];
+
+// Servo durumu
+bool servoAcik = false;
+
+void setup() {
+
+  Serial.begin(9600);
+  co2Serial.begin(9600);
+
+  // LCD başlat
+  lcd.begin(16, 2);
+
+  // Servo başlat
+  servoMotor.attach(8);
+
+  // Başlangıç kapalı
+  servoMotor.write(0);
+
+  lcd.setCursor(0, 0);
+  lcd.print("Sistem Basladi");
+
+  delay(2000);
+
+  lcd.clear();
+}
+
+void loop() {
+
+  // Sensöre veri isteği gönder
+  co2Serial.write(readCommand, 9);
+
+  memset(response, 0, 9);
+
+  co2Serial.readBytes(response, 9);
+
+  lcd.clear();
+
+  // Veri kontrolü
+  if (response[0] != 0xFF || response[1] != 0x86) {
+
+    Serial.println("Okuma Hatasi");
+
+    lcd.setCursor(0, 0);
+    lcd.print("Okuma Hatasi");
+
+  } else {
+
+    // PPM hesapla
+    int co2High = (int)response[2];
+    int co2Low = (int)response[3];
+
+    int ppm = (co2High * 256) + co2Low;
+
+    // ==================== LCD ====================
+
+    lcd.setCursor(0, 0);
+    lcd.print("CO2:");
+
+    lcd.setCursor(5, 0);
+    lcd.print(ppm);
+
+    lcd.setCursor(10, 0);
+    lcd.print("PPM");
+
+    // ==================== Servo Kontrol ====================
+
+    // 1500 üstü -> aç
+    if (ppm > 1500 && !servoAcik) {
+
+      servoMotor.write(90);
+
+      servoAcik = true;
+
+      Serial.println("Servo Acildi");
+    }
+
+    // 1000 altı -> kapa
+    else if (ppm < 1000 && servoAcik) {
+
+      servoMotor.write(0);
+
+      servoAcik = false;
+
+      Serial.println("Servo Kapandi");
+    }
+
+    // ==================== LCD Durum ====================
+
+    lcd.setCursor(0, 1);
+
+    if (servoAcik) {
+      lcd.print("Durum: Acik ");
+    } else {
+      lcd.print("Durum: Kapali");
+    }
+
+    // ==================== Seri Monitor ====================
+
+    Serial.print("CO2: ");
+    Serial.print(ppm);
+    Serial.println(" ppm");
+  }
+
+  delay(5000);
+}
