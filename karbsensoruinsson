@@ -1,0 +1,108 @@
+#include <SoftwareSerial.h>
+#include <LiquidCrystal.h>
+#include <Servo.h>
+
+// ==================== MH-Z19B ====================
+SoftwareSerial co2Serial(10, 11);
+
+// ==================== LCD ====================
+LiquidCrystal lcd(7, 6, 5, 4, 3, 2);
+
+// ==================== Servo ====================
+Servo servoMotor;
+
+byte readCommand[] = {
+  0xFF, 0x01, 0x86,
+  0x00, 0x00, 0x00,
+  0x00, 0x00, 0x79
+};
+
+byte response[9];
+
+// false = kapalı
+// true  = açık
+bool servoAcik = false;
+
+void setup() {
+
+  Serial.begin(9600);
+  co2Serial.begin(9600);
+
+  lcd.begin(16, 2);
+
+  lcd.print("Sistem Basladi");
+
+  delay(2000);
+
+  lcd.clear();
+}
+
+void loop() {
+
+  // Sensörden veri iste
+  co2Serial.write(readCommand, 9);
+
+  memset(response, 0, 9);
+
+  co2Serial.readBytes(response, 9);
+
+  if (response[0] == 0xFF && response[1] == 0x86) {
+
+    int ppm = (response[2] * 256) + response[3];
+
+    // ================= LCD =================
+
+    lcd.clear();
+
+    lcd.setCursor(0, 0);
+    lcd.print("CO2: ");
+    lcd.print(ppm);
+    lcd.print(" PPM");
+
+    // ============== SERVO ==============
+
+    // Açma koşulu
+    if (ppm > 1500 && !servoAcik) {
+
+      servoMotor.attach(8);
+
+      servoMotor.write(90);
+
+      delay(700);
+
+      servoMotor.detach();
+
+      servoAcik = true;
+    }
+
+    // Kapama koşulu
+    else if (ppm < 1000 && servoAcik) {
+
+      servoMotor.attach(8);
+
+      servoMotor.write(0);
+
+      delay(700);
+
+      servoMotor.detach();
+
+      servoAcik = false;
+    }
+
+    // ============== LCD ALT SATIR ==============
+
+    lcd.setCursor(0, 1);
+
+    if (servoAcik) {
+      lcd.print("Durum: Acik ");
+    } else {
+      lcd.print("Durum: Kapali");
+    }
+
+    // Seri Monitor
+    Serial.print("CO2: ");
+    Serial.println(ppm);
+  }
+
+  delay(5000);
+}
